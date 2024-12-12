@@ -1,0 +1,79 @@
+#lang racket
+
+(require racket/gui
+         "game_logic.rkt")
+
+(provide create-window)
+
+(define cell-size 10)
+
+;; Dibujar la cuadrícula
+(define (draw-grid dc cells width height)
+  (send dc clear)
+  (for* ([y (in-range height)] [x (in-range width)])
+    (let* ((index (+ x (* y width))) ;; Índice unidimensional
+           (color (if (= (list-ref cells index) 1) "black" "white")))
+      (send dc set-brush (make-object brush% color 'solid))
+      (send dc draw-rectangle (* x cell-size) (* y cell-size) cell-size cell-size))))
+
+;; Crear la ventana principal
+(define (create-window width height cells update-fn)
+  (define paused? #t)
+  (define delay 500)
+  (define frame (new frame% [label "Juego de la Vida"]))
+
+  (define canvas
+    (new (class canvas%
+           (inherit get-dc)
+           (define/override (on-event event)
+             (when (equal? (send event get-event-type) 'left-down)
+               (let* ((mouse-x (send event get-x))
+                      (mouse-y (send event get-y))
+                      (cell-x (quotient mouse-x cell-size))
+                      (cell-y (quotient mouse-y cell-size))
+                      (index (coords->index cell-x cell-y width)))
+                 (when (and (>= cell-x 0) (< cell-x width)
+                            (>= cell-y 0) (< cell-y height))
+                   (set! cells (list-set cells index (if (= (list-ref cells index) 1) 0 1)))
+                   (send this refresh)))))
+           (super-new))
+         [parent frame]
+         [min-width (* width cell-size)]
+         [min-height (* height cell-size)]
+         [paint-callback
+          (lambda (canvas dc)
+            (draw-grid dc cells width height))]))
+
+  ;; Función para manejar el temporizador
+  (define timer (new timer% [interval delay]
+                      [notify-callback
+                       (lambda ()
+                         (unless paused?
+                           (set! cells (update-fn cells))
+                           (send canvas refresh)))]))
+
+  ;; Panel de control
+  (define control-panel
+    (new horizontal-panel%
+         [parent frame]
+         [alignment '(center center)]))
+
+  ;; Botones y controles
+  (new button% [parent control-panel]
+       [label "Reanudar"]
+       [callback
+        (lambda (button event)
+          (set! paused? (not paused?))
+          (send button set-label (if paused? "Reanudar" "Pausa")))])
+
+  (new button% [parent control-panel]
+       [label "Siguiente"]
+       [callback
+        (lambda (button event)
+          (when paused?
+            (set! cells (update-fn cells))
+            (send canvas refresh)))])
+
+  ;; Ajustar el tamaño de la ventana
+  (send frame resize (* width cell-size) (+ (* height cell-size) (send control-panel min-height)))
+  (send frame show #t))
