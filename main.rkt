@@ -1,11 +1,11 @@
-(require "game_logic.rkt"
-         "game_gui.rkt")
+#lang racket
+
+(require "game_gui.rkt")
 
 ;; Configuración inicial
-(define width 20)
-(define height 20)
-(define initial-cells (build-list (* width height) (lambda (_) (random 2))))
+(define width 100)
+(define height 70)
 
-;; Inicializar la ventana
-(create-window width height initial-cells
-               (lambda (cells) (update-grid cells width height life-rule)))
+;; Iniciar el menú principal
+(create-main-menu width height)
+

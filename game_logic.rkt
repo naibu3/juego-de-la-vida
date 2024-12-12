@@ -69,8 +69,7 @@ Formato del archivo:
 (define (import-board filename)
   (with-input-from-file filename
     (lambda ()
-      (let ((lines (port->lines (current-input-port))))
-        ;; Convierte las líneas del archivo en una lista unidimensional
+      (let ([lines (port->lines (current-input-port))])
         (apply append
                (map (lambda (line)
                       (map string->number (string-split line)))
