@@ -2,10 +2,6 @@
 
 (require "game_gui.rkt")
 
-;; Configuración inicial
-(define width 70)
-(define height 40)
-
-;; Iniciar el menú principal
-(create-main-menu width height)
+;; Iniciar el menú principal (parámetros definidos en game_gui.rkt)
+(create-main-menu default-width default-height)
 

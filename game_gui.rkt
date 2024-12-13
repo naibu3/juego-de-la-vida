@@ -5,12 +5,11 @@
          ;"sounds.rkt"
          )
 
-(define main-menu-width 70)
-(define main-menu-height 40)
-
-(provide create-main-menu create-game-window)
-
+(define default-width 100)
+(define default-height 40)
 (define cell-size 10)
+
+(provide create-main-menu create-game-window default-width default-height)
 
 (define (create-rules-window on-save)
   (define frame (new frame% [label "Ajustar Reglas"]))
@@ -49,7 +48,7 @@
        [label "Volver al Menú Principal"]
        [callback (lambda (button event)
                    (begin
-                     (create-main-menu main-menu-width main-menu-height) ; Crear el menú principal
+                     (create-main-menu default-width default-height) ; Crear el menú principal
                      (send frame show #f)))]) ; Cerrar la ventana actual
 
   (send frame show #t))
@@ -204,7 +203,7 @@ Observaciones:
        [label "Volver al Menú Principal"]
        [callback (lambda (button event)
                    (begin
-                     (create-main-menu main-menu-width main-menu-height) ; Crear el menú principal
+                     (create-main-menu default-width default-height) ; Crear el menú principal
                      (send frame show #f)))]) ; Cerrar la ventana actual
 
 
@@ -217,14 +216,52 @@ Observaciones:
   ;; Mostrar la ventana
   (send frame show #t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Matriz del título "Juego de la Vida" como lista unidimensional
+(define title-grid
+  (list
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0
+   0 0 0 0 1 1 1 1 0 0 0 0 1 0 0 0 1 1 0 0 1 1 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0
+   0 0 0 0 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 0 1 0 0 0 1 1 1 0 1 0 1 0 0 0 0
+   0 0 1 0 0 1 0 1 0 1 0 1 1 1 0 1 1 1 0 1 0 0 1 0 0 1 0 0 1 0 1 1 1 0 0 0 0
+   0 0 0 1 1 0 0 0 1 0 0 1 0 0 0 0 0 1 0 0 1 1 0 0 0 0 1 1 0 0 1 0 0 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0
+   
+   0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0
+   0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0
+   0 0 0 0 1 0 0 0 1 1 1 0 0 0 0 0 1 0 0 1 0 0 0 0 1 1 1 0 0 1 1 1 0 0 0 0 0
+   0 0 0 0 1 0 0 1 0 0 1 0 0 0 0 0 0 1 0 1 0 1 0 1 0 0 1 0 1 0 0 1 0 0 0 0 0
+   0 0 0 0 0 1 0 0 1 1 0 1 0 0 0 0 0 0 1 0 0 1 0 0 1 1 0 0 0 1 1 0 1 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+(define title-cols 37) ; Número de columnas
+(define title-rows 16)  ; Número de filas
+
+
 ;; Crear el menú principal
 (define (create-main-menu width height)
   (define frame (new frame% [label "Juego de la Vida - Menú Principal"]))
 
-  (define main-panel
-    (new vertical-panel%
-         [parent frame]))
 
+  ;; Panel
+  (define main-panel
+    (new vertical-panel% [parent frame]))
+  
+  ;; Canvas para el título
+  (define canvas
+    (new canvas%
+         [parent main-panel]
+         [min-width (* title-cols cell-size)]
+         [min-height (* title-rows cell-size)]
+         [paint-callback
+          (lambda (canvas dc)
+            (draw-grid dc title-grid title-cols title-rows))]))
+  
+  
   ;; Botón para iniciar con un tablero vacío
   (new button% [parent main-panel]
        [label "Tablero vacío"]
