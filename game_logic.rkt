@@ -1,8 +1,13 @@
 #lang racket
 
 
+(define min-survive 2)
+(define max-survive 3)
+(define birth-neighbours 3)
+
 (provide update-grid get-neighbours life-rule map-indexed coords->index index->coords
-         import-board export-board)
+         set-rules min-survive max-survive birth-neighbours import-board export-board)
+
 
 ;; Convierte coordenadas (x, y) a un índice unidimensional
 (define (coords->index x y width)
@@ -29,9 +34,15 @@
 (define (life-rule cell neighbours)
   (let ((alive-neighbours (count (lambda (n) (= n 1)) neighbours)))
     (cond
-      ((and (= cell 1) (or (= alive-neighbours 2) (= alive-neighbours 3))) 1)
-      ((and (= cell 0) (= alive-neighbours 3)) 1)
+      ((and (= cell 1) (>= alive-neighbours min-survive) (<= alive-neighbours max-survive)) 1)
+      ((and (= cell 0) (= alive-neighbours birth-neighbours)) 1)
       (else 0))))
+
+;; Función para establecer nuevas reglas
+(define (set-rules new-min new-max new-birth)
+  (set! min-survive new-min)
+  (set! max-survive new-max)
+  (set! birth-neighbours new-birth))
 
 ;; map-indexed: aplica una función a cada elemento con su índice
 (define (map-indexed proc lst)

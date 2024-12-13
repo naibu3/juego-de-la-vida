@@ -1,0 +1,1 @@
+("8.15" ta6le ("277a5fc4a2741a4d5b7d5967822fce1223b43107" . "7eb14cfc5c6506a3496df1d77a4acc7b3e1158a1") #"/home/naibu3/Documentos/UCO/PD/juego-de-la-vida/game_logic.rkt" (collects #"drracket" #"private" #"drracket-errortrace-key.rkt") (collects #"racket" #"gui.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))

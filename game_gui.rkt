@@ -1,20 +1,90 @@
 #lang racket
 
 (require racket/gui
-         "game_logic.rkt")
+         "game_logic.rkt"
+         ;"sounds.rkt"
+         )
+
+(define main-menu-width 70)
+(define main-menu-height 40)
 
 (provide create-main-menu create-game-window)
 
 (define cell-size 10)
 
-;; Dibujar la cuadrícula
+(define (create-rules-window on-save)
+  (define frame (new frame% [label "Ajustar Reglas"]))
+  (define main-panel (new vertical-panel% [parent frame]))
+
+  ;; Inputs para ajustar las reglas
+  (define min-survive-input (new text-field% [label "Mínimo vecinos para sobrevivir:"]
+                                 [parent main-panel]
+                                 [init-value (number->string min-survive)]))
+
+  (define max-survive-input (new text-field% [label "Máximo vecinos para sobrevivir:"]
+                                 [parent main-panel]
+                                 [init-value (number->string max-survive)]))
+
+  (define birth-neighbours-input (new text-field% [label "Vecinos para nacer:"]
+                                      [parent main-panel]
+                                      [init-value (number->string birth-neighbours)]))
+
+  ;; Botón para guardar las reglas
+  (define save-rules-button (new button% [parent main-panel]
+       [label "Guardar reglas"]
+       [callback
+        (lambda (button event)
+          (let ([new-min (string->number (send min-survive-input get-value))]
+                [new-max (string->number (send max-survive-input get-value))]
+                [new-birth (string->number (send birth-neighbours-input get-value))])
+            (set-rules new-min new-max new-birth)
+            (send frame show #f)
+            (on-save)))])
+    ;; Agregar sonido al botón
+    ;;(add-sound-to-button save-rules-button button-sound)
+    )
+
+  ;; Botón para volver al menú principal
+  (new button% [parent main-panel]
+       [label "Volver al Menú Principal"]
+       [callback (lambda (button event)
+                   (begin
+                     (create-main-menu main-menu-width main-menu-height) ; Crear el menú principal
+                     (send frame show #f)))]) ; Cerrar la ventana actual
+
+  (send frame show #t))
+
+#| draw-grid
+Objetivo: Dibuja una cuadrícula en un canvas.
+
+Parámetros:
+- dc: Objeto de tipo `dc<%>`. Es el contexto gráfico donde se dibujará la cuadrícula.
+- cells: Lista unidimensional que representa el estado de las celdas (0 para muerta, 1 para viva).
+- width: Entero que indica el número de columnas de la cuadrícula.
+- height: Entero que indica el número de filas de la cuadrícula.
+
+Return: No hay retorno de  valores
+
+Observaciones:
+|#
 (define (draw-grid dc cells width height)
+  ;; Limpia el canvas
   (send dc clear)
+
+  ;; Configura el pincel para las líneas de la cuadrícula
+  (send dc set-pen (make-object pen% "light gray" 1 'solid))
+
+  ;; Dibuja la cuadrícula
   (for* ([y (in-range height)] [x (in-range width)])
     (let* ((index (+ x (* y width))) ;; Índice unidimensional
            (color (if (= (list-ref cells index) 1) "black" "white")))
+      ;; Dibuja el borde de la celda
+      (send dc draw-rectangle (* x cell-size) (* y cell-size) cell-size cell-size)
+      ;; Configura el pincel para rellenar la celda
       (send dc set-brush (make-object brush% color 'solid))
+      ;; Rellena la celda
       (send dc draw-rectangle (* x cell-size) (* y cell-size) cell-size cell-size))))
+
 
 ;; Crear la ventana del juego
 (define (create-game-window width height cells update-fn)
@@ -129,6 +199,16 @@
             (when filename
               (export-board filename cells width height))))])
 
+  ;; Botón para volver al menú principal
+  (new button% [parent control-panel]
+       [label "Volver al Menú Principal"]
+       [callback (lambda (button event)
+                   (begin
+                     (create-main-menu main-menu-width main-menu-height) ; Crear el menú principal
+                     (send frame show #f)))]) ; Cerrar la ventana actual
+
+
+
   ;; Ajustar el tamaño inicial de la ventana
   (send frame resize
         (* width cell-size)
@@ -180,5 +260,13 @@
                                   (lambda (cells) (update-grid cells new-width new-height life-rule)))))))])
 
 
+  (new button% [parent main-panel]
+     [label "Ajustar reglas"]
+     [callback
+      (lambda (button event)
+        (send frame show #f)
+        (create-rules-window (lambda ()
+                               (send frame show #t))))])
+  
   ;; Mostrar el menú principal
   (send frame show #t))
