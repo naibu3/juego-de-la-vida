@@ -10,12 +10,13 @@ Variables de configuración del juego:
 (define min-survive 2)
 (define max-survive 3)
 (define birth-neighbours 3)
+(define randomness 2)
 
 #|
 Interfaz del módulo
 |#
 (provide update-grid get-neighbours life-rule map-indexed coords->index index->coords
-         set-rules min-survive max-survive birth-neighbours import-board export-board)
+         set-rules min-survive max-survive birth-neighbours randomness import-board export-board)
 
 #| set-rules
 Objetivo: Establece nuevas reglas para el juego, especificando los valores de supervivencia mínima,
@@ -26,10 +27,11 @@ Parámetros:
     - new-birth: Número exacto de vecinos necesarios para que una célula muerta cobre vida (entero).
 Return: No retorna ningún valor (modifica las reglas globales).
 |#
-(define (set-rules new-min new-max new-birth)
+(define (set-rules new-min new-max new-birth new-randomness)
   (set! min-survive new-min)
   (set! max-survive new-max)
-  (set! birth-neighbours new-birth))
+  (set! birth-neighbours new-birth)
+  (set! randomness new-randomness))
 
 #| coords->index
 Objetivo: Convierte coordenadas (x, y) a un índice unidimensional.
@@ -67,15 +69,22 @@ Return: Una lista de índices unidimensionales que representan las celdas vecina
     (and (>= x 0) (< x width)
          (>= y 0) (< y height) )
     )
-  
+
+  ; Obtenemos todas las coordenadas de alrededor y nos quedamos las validas con filter
   (define (neighbour-coords x y)
     (filter (lambda (coords) (apply valid? coords))
             (list (list (- x 1) (- y 1)) (list x (- y 1)) (list (+ x 1) (- y 1))
                   (list (- x 1) y)                     (list (+ x 1) y)
                   (list (- x 1) (+ y 1)) (list x (+ y 1)) (list (+ x 1) (+ y 1)))))
-  (let ((coords (index->coords index width)))
+
+  ; Guardamos las coordenadas obtenidas en una lista
+  (let (; Variables de let
+        (coords (index->coords index width))
+        )
+    ; Cuerpo de let
     (map (lambda (coord) (coords->index (car coord) (cadr coord) width))
-         (neighbour-coords (car coords) (cadr coords)))))
+         (neighbour-coords (car coords) (cadr coords)))
+    ))
 
 #| life-rule
 Objetivo: Regla que determina si una celda debe estar viva o muerta en la próxima generación.
@@ -85,11 +94,18 @@ Parámetros:
 Return: Un booleano indicando si la celda estará viva (true) o muerta (false).
 |#
 (define (life-rule cell neighbours)
-  (let ((alive-neighbours (count (lambda (n) (= n 1)) neighbours)))
+  (let (; Variables de let
+        (alive-neighbours (count (lambda (n) (= n 1)) neighbours))
+        )
+    ;Cuerpo de let
     (cond
-      ((and (= cell 1) (>= alive-neighbours min-survive) (<= alive-neighbours max-survive)) 1)
-      ((and (= cell 0) (= alive-neighbours birth-neighbours)) 1)
-      (else 0))))
+      ((and (= cell 1)
+            (>= alive-neighbours min-survive)
+            (<= alive-neighbours max-survive)) 1)
+      ((and (= cell 0)
+            (= alive-neighbours birth-neighbours)) 1)
+      (else 0))
+    ))
 
 
 
@@ -120,7 +136,8 @@ Return: Una nueva lista que representa el estado actualizado de la cuadrícula.
 (define (update-grid cells width height rule)
   (define neighbourhoods
     (lambda (cell)
-      (get-neighbours cell width height)))
+      (get-neighbours cell width height))
+    )
   (map-indexed
    (lambda (index cell)
      (rule cell (map (lambda (idx) (list-ref cells idx))

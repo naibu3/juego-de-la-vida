@@ -11,8 +11,17 @@
 
 (provide create-main-menu create-game-window default-width default-height)
 
+#| create-rules-window
+Objetivo: Crear una ventana para ajustar las reglas del juego y guardar los cambios.
+Parámetro: on-save : (-> void) Función que se ejecuta después de guardar las reglas.
+Retorno: Ninguno (crea y muestra una ventana).
+|#
 (define (create-rules-window on-save)
+
+  ; Crear ventana
   (define frame (new frame% [label "Ajustar Reglas"]))
+
+  ; Crear panel principal
   (define main-panel (new vertical-panel% [parent frame]))
 
   ;; Inputs para ajustar las reglas
@@ -28,6 +37,10 @@
                                       [parent main-panel]
                                       [init-value (number->string birth-neighbours)]))
 
+  (define randomness-input (new text-field% [label "Aleatoriedad en la generación de tableros:"]
+                                      [parent main-panel]
+                                      [init-value (number->string randomness)]))
+
   ;; Botón para guardar las reglas
   (define save-rules-button (new button% [parent main-panel]
        [label "Guardar reglas"]
@@ -35,8 +48,9 @@
         (lambda (button event)
           (let ([new-min (string->number (send min-survive-input get-value))]
                 [new-max (string->number (send max-survive-input get-value))]
-                [new-birth (string->number (send birth-neighbours-input get-value))])
-            (set-rules new-min new-max new-birth)
+                [new-birth (string->number (send birth-neighbours-input get-value))]
+                [new-randomness (string->number (send randomness-input get-value))])
+            (set-rules new-min new-max new-birth new-randomness)
             (send frame show #f)
             (on-save)))])
     ;; Agregar sonido al botón
@@ -62,7 +76,7 @@ Parámetros:
 - width: Entero que indica el número de columnas de la cuadrícula.
 - height: Entero que indica el número de filas de la cuadrícula.
 
-Return: No hay retorno de  valores
+Return: No hay retorno de valores
 
 Observaciones:
 |#
@@ -74,9 +88,15 @@ Observaciones:
   (send dc set-pen (make-object pen% "light gray" 1 'solid))
 
   ;; Dibuja la cuadrícula
-  (for* ([y (in-range height)] [x (in-range width)])
-    (let* ((index (+ x (* y width))) ;; Índice unidimensional
-           (color (if (= (list-ref cells index) 1) "black" "white")))
+  (for* (; Variables de for
+         [y (in-range height)]
+         [x (in-range width)]
+         )
+    ; Cuerpo de for
+    (let* (; Variables de let
+           (index (+ x (* y width))) ;; Índice unidimensional
+           (color (if (= (list-ref cells index) 1) "black" "white"))
+           )
       ;; Dibuja el borde de la celda
       (send dc draw-rectangle (* x cell-size) (* y cell-size) cell-size cell-size)
       ;; Configura el pincel para rellenar la celda
@@ -85,7 +105,15 @@ Observaciones:
       (send dc draw-rectangle (* x cell-size) (* y cell-size) cell-size cell-size))))
 
 
-;; Crear la ventana del juego
+#| create-game-window
+Objetivo: Crear la ventana principal donde se juega al Juego de la Vida.
+Parámetros:
+  - width     : number           -> Ancho del tablero.
+  - height    : number           -> Alto del tablero.
+  - cells     : (listof number)  -> Lista que representa el estado inicial de las celdas (0 o 1).
+  - update-fn : (listof number -> listof number) -> Función para actualizar el estado de las celdas.
+Retorno: Ninguno (inicia una ventana gráfica interactiva).
+|#
 (define (create-game-window width height cells update-fn)
   (define paused? #t)
   (define delay 500)
@@ -102,19 +130,29 @@ Observaciones:
   ;; Canvas
   (define canvas
     (new (class canvas%
+           ; Importar el método para trabajar con el dibujo
            (inherit get-dc)
+           
+           ;; Manejo de eventos del canvas
            (define/override (on-event event)
              (when (equal? (send event get-event-type) 'left-down)
-               (let* ((mouse-x (send event get-x))
+               (let* (; Variables de let
+                      (mouse-x (send event get-x))
                       (mouse-y (send event get-y))
                       (cell-x (quotient mouse-x cell-size))
                       (cell-y (quotient mouse-y cell-size))
-                      (index (coords->index cell-x cell-y width)))
+                      (index (coords->index cell-x cell-y width))
+                      )
+                 ; Cuerpo de let
                  (when (and (>= cell-x 0) (< cell-x width)
                             (>= cell-y 0) (< cell-y height))
-                   (set! cells (list-set cells index (if (= (list-ref cells index) 1) 0 1)))
-                   (send this refresh)))))
+                   ;; Actualiza el estado de la celda seleccionada
+                   (set! cells (list-set cells index (if (= (list-ref cells index) 1) 0 1))) ; Alterna entre 1 y 0
+                   (send this refresh))))) ; Redibuja el canvas
+           
+           ; Llama al constructor de la clase `canvas%`
            (super-new))
+         
          [parent main-panel]
          [stretchable-width #t]
          [stretchable-height #t]
@@ -242,7 +280,13 @@ Observaciones:
 (define title-rows 16)  ; Número de filas
 
 
-;; Crear el menú principal
+#| create-main-menu
+Objetivo: Crear una ventana principal con un menú para el Juego de la Vida.
+Parámetros:
+ - width : number -> Ancho del tablero de juego.
+ - height : number -> Alto del tablero de juego.
+Retorno: Ninguno (inicia una ventana gráfica).
+|#
 (define (create-main-menu width height)
   (define frame (new frame% [label "Juego de la Vida - Menú Principal"]))
 
@@ -277,7 +321,7 @@ Observaciones:
        [callback
         (lambda (button event)
           (send frame show #f)
-          (create-game-window width height (build-list (* width height) (lambda (_) (random 2)))
+          (create-game-window width height (build-list (* width height) (lambda (_) (random randomness)))
                               (lambda (cells) (update-grid cells width height life-rule))))])
 
   ;; Botón para cargar un tablero desde archivo en el menú principal
@@ -304,6 +348,12 @@ Observaciones:
         (send frame show #f)
         (create-rules-window (lambda ()
                                (send frame show #t))))])
+  
+  (new button% [parent main-panel]
+     [label "Salir"]
+     [callback
+      (lambda (button event)
+        (exit))])
   
   ;; Mostrar el menú principal
   (send frame show #t))
