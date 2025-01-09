@@ -1,5 +1,6 @@
-# juego-de-la-vida
-Juego de la vida desarrollado como proyecto para la asignatura de Programación Declarativa.
+# Juego de la Vida en Scheme
+
+Esta es una implementación del **Juego de la Vida de Conway** desarrollado como proyecto para la asignatura de Programación Declarativa en el grado en ingeniería informática de la Universidad de Córdoba.
 
 El juego ha sido implementado en Scheme, en su versión *Pretty Big* (v8).
 
